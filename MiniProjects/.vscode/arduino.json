@@ -1,0 +1,5 @@
+{
+    "board": "arduino:avr:uno",
+    "port": "/dev/tty.usbmodem1201",
+    "sketch": "Assignment/Assignment.ino"
+}
