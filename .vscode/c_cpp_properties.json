@@ -17,6 +17,8 @@
             "includePath": [
                 "/Users/fate/Library/Arduino15/packages/arduino/hardware/avr/1.8.6/cores/arduino",
                 "/Users/fate/Library/Arduino15/packages/arduino/hardware/avr/1.8.6/variants/standard",
+                "/Users/fate/Documents/Arduino/libraries/LiquidCrystal/src",
+                "/Users/fate/Documents/Arduino/libraries/DHTLib",
                 "/Users/fate/Library/Arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/lib/gcc/avr/7.3.0/include",
                 "/Users/fate/Library/Arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/lib/gcc/avr/7.3.0/include-fixed",
                 "/Users/fate/Library/Arduino15/packages/arduino/tools/avr-gcc/7.3.0-atmel3.6.1-arduino7/avr/include"

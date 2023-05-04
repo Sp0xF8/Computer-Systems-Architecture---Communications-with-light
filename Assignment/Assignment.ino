@@ -5,36 +5,39 @@
 
 */
 
+#include <LiquidCrystal.h>;
+#include <dht.h>
+
+dht DHT;
 int ledState = LOW; // ledState used to set the LED
+LiquidCrystal lcd(12, 11, 5, 4, 3 ,2);
 
 // the setup routine runs once when you press reset:
 void setup()
 {
 
+  lcd.begin(16, 2);
+
+
   // initialize pins as input
 
-  pinMode(2, INPUT);
-  pinMode(4, INPUT);
-  pinMode(A1, INPUT);
-  pinMode(5, INPUT);
-  pinMode(6, INPUT);
-  pinMode(7, INPUT);
+  pinMode(6, OUTPUT); // LED - DATA TRANSFER
+
+
+  pinMode(7, OUTPUT); // LED 
+
+
 
   // set the digital pin as output:
 
-  pinMode(3, OUTPUT);
-  pinMode(9, OUTPUT);
-  pinMode(10, OUTPUT);
-  pinMode(11, OUTPUT);
-  pinMode(12, OUTPUT);
-  pinMode(13, OUTPUT);
-  pinMode(A2, OUTPUT);
-  pinMode(A3, OUTPUT);
+  pinMode(13, INPUT); // TEMP / HUMIDITY
+
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
+  
 }
 
-const long txInterval = 150; // interval at which to tx bit (milliseconds)
+const long txInterval = 200; // interval at which to tx bit (milliseconds)
 int tx_state = 0;
 char chr;
 unsigned long previousTxMillis = 0; // will store last time LED was updated
@@ -48,7 +51,7 @@ int tx_string_state = TX_START_OF_TEXT;
 char txButton, txTilt, txPot, txA, txB, txC, txD;
 char txBuffer[8] = {0, 0, 0, 0, 0, 0, 0, ETX};
 char rxBuffer[7];
-char rxButton, rxTilt, rxPot, rxA, rxB, rxC, rxD;
+int rxButton, rxTilt, rxPot, rxA, rxB, rxC, rxD;
 int rx_index;
 
 void readInputs()
@@ -56,21 +59,41 @@ void readInputs()
   // Reads the inputs in the mini-projects
   // Uses txButton, txTilt, txPot, txA, txB, txC, txD;
 
-  txButton = 1;
+  txButton = 0;
   txTilt = 1;
-  txPot = 7;
+  txPot = map(analogRead(A4), 0, 500, 0 , 10);
   txA = 99;
   txB = 99;
   txC = 99;
   txD = 99;
-  // Serial.print(txButton);
-  // Serial.print(txTilt);
-  // Serial.print(txPot);
-  // Serial.print(txA);
-  // Serial.print(txB);
-  // Serial.print(txC);
-  // Serial.print(txD);
-  // Serial.println();
+
+  // if((x > 400 && x < 600) && (y < 300)) {
+  //   Serial.println("Forward");
+  // } else if ((x > 400 && x < 600) && (y > 700)) {
+  //   Serial.println("Back");
+  // } else if ((y > 400 && y < 600) && (x < 300)) {
+  //   Serial.println("Left");
+  // } else if ((y > 400 && y < 600) && (x > 700)) {
+  //   Serial.println("Right");
+  // } else {
+  //   Serial.println("Still");
+  // }
+
+  // Serial.println((analogRead(A0) + analogRead(A1)) / 10);
+
+  // Serial.println("x");
+  // Serial.println(x);
+  // Serial.println("y");
+  // Serial.println(y);
+
+//   // Serial.print(txButton);
+//   // Serial.print(txTilt);
+//   // Serial.print(txPot);
+//   // Serial.print(txA);
+//   // Serial.print(txB);
+//   // Serial.print(txC);
+//   // Serial.print(txD);
+//   // Serial.println();
 }
 
 void writeOutputs()
@@ -78,13 +101,29 @@ void writeOutputs()
   // Writes the outputs in the mini-projects
   // Uses rxButton, rxTilt, rxPot, rxA, rxB, rxC, rxD;
 
-  digitalWrite(9, rxButton);
-  digitalWrite(10, rxTilt);
-  analogWrite(11, rxPot);
-  digitalWrite(12, rxA);
-  digitalWrite(13, rxB);
-  digitalWrite(A2, rxC);
-  digitalWrite(A3, rxD);
+  // if (rxButton == 1)
+  // {
+  //   tone(13, 1000, 100);
+  // }
+  // else
+  // {
+  //   noTone(13);
+  // }
+  digitalWrite(7, rxTilt);
+  // analogWrite(11, rxPot);
+  // digitalWrite(12, rxA);
+  // digitalWrite(13, rxB);
+  // digitalWrite(A2, rxC);
+  // digitalWrite(A3, rxD);
+
+  lcd.clear(); // clears straggler text
+  lcd.setCursor(0, 0);
+  lcd.print("Distance");
+  lcd.setCursor(0, 1);
+  lcd.print(rxD);
+  lcd.setCursor(4, 1);
+  lcd.print("cm");
+
 
   // Serial.print(rxButton);
   // Serial.print(rxTilt);
@@ -145,7 +184,7 @@ void txChar()
     case 0:
       chr = getTxChar();
       //Serial.println(chr);
-      digitalWrite(3, HIGH); /* Transmit Start bit */
+      digitalWrite(6, HIGH); /* Transmit Start bit */
       tx_state++;
       break;
 
@@ -158,23 +197,23 @@ void txChar()
     case 7:
       if ((chr & 0x40) != 0)
       { /* Transmit each bit in turn */
-        digitalWrite(3, HIGH);
+        digitalWrite(6, HIGH);
       }
       else
       {
-        digitalWrite(3, LOW);
+        digitalWrite(6, LOW);
       }
       chr = chr << 1; /* Shift left to present the next bit */
       tx_state++;
       break;
 
     case 8:
-      digitalWrite(3, HIGH); /* Transmit Stop bit */
+      digitalWrite(6, HIGH); /* Transmit Stop bit */
       tx_state++;
       break;
 
     default:
-      digitalWrite(3, LOW);
+      digitalWrite(6, LOW);
       tx_state++;
       if (tx_state > 20)
         tx_state = 0; /* Start resending the character */
@@ -183,7 +222,7 @@ void txChar()
   }
 }
 
-const long rxInterval = 15; // interval at which to read bit (milliseconds)
+const long rxInterval = 20; // interval at which to read bit (milliseconds)
 int rx_state = 0;
 char rx_char;
 unsigned long previousRxMillis = 0; // will store last time LED was updated
@@ -200,7 +239,9 @@ void rxChar()
     // save the last time you read the analogue input (improved)
     previousRxMillis = previousRxMillis + rxInterval; // this version catches up with itself if a delay was introduced
 
-    sensorValue = analogRead(A0);
+    sensorValue = analogRead(A5);
+
+    // Serial.println(sensorValue);
     // Serial.println(rx_state);
 
     switch (rx_state)
@@ -279,12 +320,13 @@ void rxChar()
   }
 }
 
-// the loop routine runs over and over again forever:
+// // the loop routine runs over and over again forever:
 void loop()
 {
 
   txChar();
   rxChar();
-  writeOutputs();
   readInputs();
+  writeOutputs();
+  
 }

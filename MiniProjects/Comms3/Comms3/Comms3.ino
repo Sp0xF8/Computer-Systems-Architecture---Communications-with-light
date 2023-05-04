@@ -13,18 +13,18 @@ int ledState = LOW;             // ledState used to set the LED
 void setup()
 {
   // set the digital pin as output:
-  pinMode(3, OUTPUT);
+  pinMode(6, OUTPUT);
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
 }
 
 
-const long txInterval = 150;              // interval at which to tx bit (milliseconds)
+const long txInterval = 200;              // interval at which to tx bit (milliseconds)
 int tx_state = 0;
 char chr;
 unsigned long previousTxMillis = 0;        // will store last time LED was updated
 
-char tx_string[] = "Pls i hav paper";
+char tx_string[] = "H";
 #define TX_START_OF_TEXT  -1
 int tx_string_state = TX_START_OF_TEXT;
 
@@ -71,7 +71,7 @@ void txChar()
     {
       case 0:
         chr = getTxChar();
-        digitalWrite(3, HIGH);  /* Transmit Start bit */
+        digitalWrite(6, HIGH);  /* Transmit Start bit */
         tx_state++;
         break;
 
@@ -84,23 +84,23 @@ void txChar()
       case 7:
         if ((chr & 0x40) != 0)   /* Transmit each bit in turn */
         {
-          digitalWrite(3, HIGH);
+          digitalWrite(6, HIGH);
         }
         else
         {
-          digitalWrite(3, LOW);
+          digitalWrite(6, LOW);
         }
         chr = chr << 1;  /* Shift left to present the next bit */
         tx_state++;
         break;
 
       case 8:
-        digitalWrite(3, HIGH);  /* Transmit Stop bit */
+        digitalWrite(6, HIGH);  /* Transmit Stop bit */
         tx_state++;
         break;
 
       default:
-        digitalWrite(3, LOW);
+        digitalWrite(6, LOW);
         tx_state++;
         if (tx_state > 20) tx_state = 0;  /* Start resending the character */
         break;
@@ -110,7 +110,7 @@ void txChar()
 
 
 
-const long rxInterval = 15;              // interval at which to read bit (milliseconds)
+const long rxInterval = 20;              // interval at which to read bit (milliseconds)
 int rx_state = 0;
 char rx_char;
 unsigned long previousRxMillis = 0;        // will store last time LED was updated
@@ -128,7 +128,9 @@ void rxChar()
     // save the last time you read the analogue input (improved)
     previousRxMillis = previousRxMillis + rxInterval;  // this version catches up with itself if a delay was introduced
 
-    sensorValue = analogRead(A0);
+    sensorValue = analogRead(A5);
+
+    // Serial.println(sensorValue);
     //Serial.println(rx_state);
 
     switch (rx_state)
@@ -158,10 +160,10 @@ void rxChar()
         {
           Serial.println("Rx error");
         }
-//        for (i = 0; i < 10; i++)  /* Print the recieved bit on the monitor - debug purposes */
-//        {
-//          Serial.println(rx_bits[i]);
-//        }
+       for (i = 0; i < 10; i++)  /* Print the recieved bit on the monitor - debug purposes */
+       {
+         Serial.println(rx_bits[i]);
+       }
         for (i = 0; i < 10; i++)
         {
           rx_bits[i] = 0;
