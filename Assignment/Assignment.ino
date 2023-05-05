@@ -1,3 +1,5 @@
+
+
 /*
   Communications v3
 
@@ -6,11 +8,17 @@
 */
 
 #include <LiquidCrystal.h>;
-#include <dht.h>
+//#include <SR04.h>;
+#include <dht.h>;
 
-dht DHT;
+
+
 int ledState = LOW;  // ledState used to set the LED
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+//SR04 sr04 = SR04(9, 10); // initialize sensor that uses digital pins 9 and 10
+dht DHT;
+
+
 
 // the setup routine runs once when you press reset:
 void setup() {
@@ -23,8 +31,8 @@ void setup() {
 
   pinMode(13, INPUT);  // TEMP / HUMIDITY
 
-  pinMode(9, INPUT); // SONAR 1
-  pinMode(10, INPUT); //SONAR 2
+  pinMode(9, INPUT);   // SONAR 1
+  pinMode(10, INPUT);  //SONAR 2
 
 
   // set the digital pin as output:
@@ -44,6 +52,9 @@ void setup() {
 const long txInterval = 200;  // interval at which to tx bit (milliseconds)
 int tx_state = 0;
 char chr;
+
+unsigned long previousReadMillis = 0;  // will store last time inputes were read
+
 unsigned long previousTxMillis = 0;  // will store last time LED was updated
 
 #define TX_START_OF_TEXT -1
@@ -58,38 +69,55 @@ char rxBuffer[7];
 int rxButton, rxTilt, rxPot, rxA, rxB, rxC, rxD;
 int rx_index;
 
-bool buttonPressed = false;
+bool buttonPressed = true;
+
 
 void readInputs() {
-  // Reads the inputs in the mini-projects
-  // Uses txButton, txTilt, txPot, txA, txB, txC, txD;
+  // reading inputs without blocking
+
+  unsigned long currentTxMillis = millis();
+
+  if (currentTxMillis - previousReadMillis >= 100) {  // if 60ms has passed since last tx
+    previousReadMillis += 100;                        // increment previousTxMillis by 60ms
+
+    // Serial.println("Reading Inputs"); // prints to serial monitor -- debug
+    int chk = DHT.read11(13);
+
+    if (analogRead(A3) > 1000) { // checks analog value of button
+      buttonPressed = !buttonPressed; // invert bool value
 
 
-  if (analogRead(A2) == (11)) {
-    txTilt = 0; // right way yp -- filted = false
-  } else {
-    txTilt = 1;// upside down -- Tilted = true
+      Serial.println("Button Pressed"); // prints to serial monitor -- debug
+    }
+
+    if (buttonPressed) {
+      txButton = 1;
+    } else {
+      txButton = 0;
+    }
+
+    if (analogRead(A2) == (11)) {
+      txTilt = 0;  // right way yp -- filted = false
+    } else {
+      txTilt = 1;  // upside down -- Tilted = true
+    }
+
+
+    txPot = map(analogRead(A4), 0, 500, 0, 10);  // finds 0-10 value for potentiometer
+    txA = int(DHT.temperature);                  // set transmission value for temp
+    txB = int(DHT.humidity);                     //set transmission value for humidity
+    
+    signed int joyStick = map(analogRead(A0), 510, 42, 0, 100); // flips values and finds range between 0-100
+
+    if (joyStick < 5){ // value of 5 to remove noise
+      txC = 0; // removes any negative values
+    } else if (joyStick >= 100) { //catches any errors with mapping
+      txC = 99; // max value of display
+    } else {
+      txC = joyStick;
+    }
   }
 
-  
-
- // Serial.println(A4);
-  // if (analogRead(A3) > 1000) {
-  //   buttonPressed = !buttonPressed;
-  // } 
-
-  // if (buttonPressed) {
-  //   txButton = 1;
-  // } else {
-  //   txButton = 0;
-  // }
-
-
-
-  txPot = map(analogRead(A4), 0, 500, 0, 10);
-  txA = 99;
-  txB = 99;
-  txC = 99;
   txD = 99;
 
   // if((x > 400 && x < 600) && (y < 300)) {
@@ -103,25 +131,22 @@ void readInputs() {
   // } else {
   //   Serial.println("Still");
   // }
-
-
 }
 
 void writeOutputs() {
   // Writes the outputs in the mini-projects
   // Uses rxButton, rxTilt, rxPot, rxA, rxB, rxC, rxD;
 
-  digitalWrite(7, rxTilt); // BLUE LED
+  digitalWrite(7, rxTilt);  // BLUE LED
 
   lcd.clear();  // clears straggler text
   lcd.setCursor(0, 0);
-  
+
   lcd.print("Distance");
   lcd.setCursor(0, 1);
   lcd.print(rxD);
   lcd.setCursor(4, 1);
   lcd.print("cm");
-
 }
 
 char getTxChar() {
