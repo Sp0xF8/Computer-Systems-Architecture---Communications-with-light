@@ -8,14 +8,12 @@
 */
 
 #include <LiquidCrystal.h>;
-//#include <SR04.h>;
 #include <dht.h>;
 
 
 
 int ledState = LOW;  // ledState used to set the LED
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
-//SR04 sr04 = SR04(9, 10); // initialize sensor that uses digital pins 9 and 10
 dht DHT;
 
 
@@ -31,8 +29,8 @@ void setup() {
 
   pinMode(13, INPUT);  // TEMP / HUMIDITY
 
-  pinMode(9, INPUT);   // SONAR 1
-  pinMode(10, INPUT);  //SONAR 2
+  pinMode(9, INPUT);   // SONAR ECHO 
+  pinMode(10, OUTPUT);  // SONAR TRIG 
 
 
   // set the digital pin as output:
@@ -47,6 +45,27 @@ void setup() {
 
   // initialize serial communication at 9600 bits per second:
   Serial.begin(9600);
+}
+long duration;
+int distance;
+
+int getDistance(){
+  digitalWrite(10, LOW);
+  delayMicroseconds(2);
+  digitalWrite(10, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(10, LOW);
+
+  duration = pulseIn(9, HIGH);
+  distance = duration * 0.034 / 2;
+
+  if (distance < 100){
+    return distance;
+
+  } else {
+    return 99;
+  }
+  
 }
 
 const long txInterval = 200;  // interval at which to tx bit (milliseconds)
@@ -77,7 +96,7 @@ void readInputs() {
 
   unsigned long currentTxMillis = millis();
 
-  if (currentTxMillis - previousReadMillis >= 100) {  // if 60ms has passed since last tx
+  if (currentTxMillis - previousReadMillis >= 100) {  // if 100ms has passed since last tx --- updates every 2 * bit / 16 * byte
     previousReadMillis += 100;                        // increment previousTxMillis by 60ms
 
     // Serial.println("Reading Inputs"); // prints to serial monitor -- debug
@@ -116,21 +135,9 @@ void readInputs() {
     } else {
       txC = joyStick;
     }
+
+    txD = getDistance();
   }
-
-  txD = 99;
-
-  // if((x > 400 && x < 600) && (y < 300)) {
-  //   Serial.println("Forward");
-  // } else if ((x > 400 && x < 600) && (y > 700)) {
-  //   Serial.println("Back");
-  // } else if ((y > 400 && y < 600) && (x < 300)) {
-  //   Serial.println("Left");
-  // } else if ((y > 400 && y < 600) && (x > 700)) {
-  //   Serial.println("Right");
-  // } else {
-  //   Serial.println("Still");
-  // }
 }
 
 void writeOutputs() {
